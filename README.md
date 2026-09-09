@@ -1,132 +1,191 @@
-# Skill Manager
+<h1 align="center">Skill Manager</h1>
 
-Claude Code 的 skill 管理工作台
+<p align="center">
+  A local web panel that keeps every Claude Code skill in one place —<br>
+  paste a GitHub URL to install, symlink-hosted so edits go live instantly.
+</p>
 
-一个网页面板 + 一个菜单栏图标，管住你所有的 Claude Code skill —— 粘一个 GitHub 地址就装上，软链接托管零拷贝，改完立刻生效。
+<p align="center">
+  <a href="README.zh-CN.md">中文</a>
+</p>
 
-**纯 Node 标准库写的，没有 `npm install` 这一步。** 克隆下来 `node manager/server.js` 就能跑。
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License">
+  <img src="https://img.shields.io/badge/node-%E2%89%A518-brightgreen" alt="Node 18+">
+  <img src="https://img.shields.io/badge/dependencies-0-success" alt="Zero dependencies">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey" alt="Platform">
+</p>
+
+<p align="center">
+  <img src="assets/panel.png" alt="Skill Manager panel: every Claude Code skill grouped by category, each card showing its name, description and install state, with a paste-a-GitHub-URL install box at the top.">
+</p>
+
+Claude Code loads skills from `~/.claude/skills`. That works fine for three of them. Past a dozen, you stop knowing what is installed, where it came from, or which copy is the real one. Installing a new skill means cloning a repo, digging for the `SKILL.md`, and moving a directory to exactly the right path.
+
+Skill Manager puts all of it on one page. Every skill it can see, grouped by what it does, with its state on the card. Installing is a paste and a click. Nothing is copied anywhere: your skills stay in a git repository you control, and `~/.claude/skills` holds only symlinks pointing at it.
+
+> **Requires Node 18 or newer** and `git` on your `PATH`. The panel itself runs anywhere Node runs. The always-on service uses launchd and the menu bar uses SwiftBar, both **macOS only**. The daily discover job supports macOS and Linux.
 
 ---
 
-## 为什么要它
+## Why
 
-Claude Code 读 `~/.claude/skills/`。skill 多起来之后有三个麻烦：
-
-| 麻烦 | 这里怎么解 |
+| The problem | What the panel does |
 | --- | --- |
-| 装了什么、装在哪，全靠 `ls` 和记忆 | 面板一页列全，按功能自动分类 |
-| 装一个 skill 要 clone、改目录、挪位置 | 粘 GitHub 地址，点安装 |
-| 文件散在 `~/.claude/skills/` 里，没版本管理 | 实体留在本库受 git 管，软链接接入 |
+| You have no idea what is installed without running `ls` | One page, everything listed, grouped by function |
+| Installing a skill means clone, hunt, move, hope | Paste a GitHub URL, click install |
+| Skills live loose in `~/.claude/skills`, outside version control | Real files stay in a git repo, only symlinks go into Claude's directory |
 
-第三条是核心。`my-skills/` 是源头，通过软链接接进 `~/.claude/skills/`，所以 Claude Code 直接能调用，而文件实体在这个 git 仓库里 —— 零拷贝，改一次生效一次，历史可回溯。
+The third row is the one that matters. `my-skills/` is the source of truth and it is tracked by git. Claude Code reads through symlinks and never knows the difference. Edit a skill once and it is live immediately, with full history behind it.
 
 ---
 
-## 面板能做什么
+## Features
 
-### 我的技能
+### Every skill on one page
 
-扫描 `~/.claude/skills` 和库目录，解析每个 `SKILL.md` 的 frontmatter，按功能关键词自动归类。
+The panel scans `~/.claude/skills` and the library directories, reads each `SKILL.md` frontmatter for its name and description, and infers a category from keywords. Skills that live only in `~/.claude/skills`, dropped there by hand, show up too.
 
-- 三种状态一眼可辨：**已安装**（软链已建）、**未安装**、**插件提供**（官方插件市场已给，不需要重复软链）
-- 一键安装 = 建软链；一键移除 = 断软链，源文件不动
-- 卡片描述可展开收起，数据变化才重渲染
+Each card carries one of three states:
 
-### 发现
+| State | Meaning |
+| --- | --- |
+| **Installed** | A symlink exists and Claude Code can load it |
+| **Not installed** | Present in the library, no symlink yet |
+| **Provided by plugin** | Already supplied by the official plugin marketplace, so linking it would collide |
 
-每天定时抓一次全网新 skill，按「全部 / 🔥 热门 / AI 创业」筛。
+Long descriptions collapse behind a toggle. The list re-renders only when the underlying data actually changes, not on every poll.
 
-| 源 | 方式 | 可靠性 |
+### Install from GitHub in one paste
+
+Paste a repository URL, click install. The panel clones it into `my-skills/`, finds the `SKILL.md` whether it sits at the repo root or one level down, and symlinks the right directory into `~/.claude/skills/`.
+
+Removing a skill unlinks it. The source directory is left alone.
+
+### Zero-copy symlink hosting
+
+```
+~/.claude/skills/design-style-parser ──symlink──► <repo>/my-skills/design-style-parser
+                                                    └── tracked by git
+```
+
+No copies to keep in sync, no "which version is the real one". Claude Code follows the link, git watches the file.
+
+### Discover feed
+
+A second tab aggregates newly published skills once a day, filterable by **All**, **Trending**, and **AI startup**.
+
+| Source | How | Reliability |
 | --- | --- | --- |
-| GitHub | Search API，按星数与近期热度排 | 稳定，可直接一键安装 |
-| YouTube | 无 key 解析搜索页，失败即降级 | 尽力而为 |
-| X / 小红书 / 即刻 | 无免费 API，靠 `manual.json` 手动补录 + 深链搜索 | 手动 |
+| GitHub | Real Search API, ranked by stars and recent activity | Solid, and installable in one click |
+| YouTube | Parses the search page without an API key, degrades on failure | Best effort |
+| X / Xiaohongshu / Jike | No free API, curated by hand in `manual.json` plus deep links | Manual |
 
-任何单源失败都不会让整体崩溃，各自 try/catch + 超时 + 独立状态。无 token 时 GitHub 请求间隔 6.5 秒避免限速，配了 `GITHUB_TOKEN` 则几乎不限速。
+Every source is wrapped in its own timeout and error handler, so one failing source never takes the page down. Without a token, GitHub requests are spaced 6.5 seconds apart to stay under the rate limit. Set `GITHUB_TOKEN` and that restriction essentially disappears.
+
+### Always-on, and in the menu bar
+
+A launchd agent keeps the backend alive, restarts it if it crashes, and starts it at login. A SwiftBar plugin puts the installed count in your menu bar, with shortcuts to open the panel, refresh the discover feed, and restart the backend. If the backend is down, the menu offers to start it.
+
+### Zero dependencies
+
+No `npm install`, no lockfile, no supply chain to audit. Node's standard library only, roughly 42 KB of source across the backend, the frontend, and the fetcher. Paths are derived at runtime from the script's own location, so cloning it anywhere works.
 
 ---
 
-## 快速开始
+## Quick start
 
 ```bash
-git clone <this-repo> ~/Documents/claude-skills
-cd ~/Documents/claude-skills
+git clone https://github.com/ssssssanjiu/skill_manager.git
+cd skill_manager
 node manager/server.js
 ```
 
-打开 http://localhost:4317 。
+Open http://localhost:4317 .
 
-路径在运行时按脚本位置推导，**克隆到任何位置都能跑**，不必是 `~/Documents`。
+### Run it as a background service (macOS)
 
-### 装成常驻服务（macOS）
-
-开机自启 + 崩溃自动重拉：
+Starts at login, restarts on crash:
 
 ```bash
-bash manager/setup-panel.sh            # 安装
-bash manager/setup-panel.sh uninstall  # 卸载
+bash manager/setup-panel.sh
 ```
 
-走 launchd，标签 `com.claude-skills.panel`，日志写在 `manager/panel.log`。
+Uninstall with `bash manager/setup-panel.sh uninstall`. The agent is labelled `com.claude-skills.panel` and logs to `manager/panel.log`.
 
-### 菜单栏图标（可选，需 SwiftBar）
+### Menu bar (optional, needs SwiftBar)
 
-在 SwiftBar 设置里，把插件目录指向 `manager/swiftbar/`。脚本要和同目录的 `menu.js` 一起用，所以别只软链单个文件。
+Point SwiftBar's plugin directory at `manager/swiftbar/`. The script needs `menu.js` beside it, so do not symlink the shell script on its own.
 
-菜单栏显示已装 skill 数量，点开可直接跳面板、刷新发现页、重启后端；后端没运行时会给一个「启动后端」的按钮。
+### Daily discover job (optional)
 
-### 发现页每日抓取（可选）
-
-每天 09:00 抓一次。macOS 走 launchd，Linux 走 cron。
+Runs once a day at 09:00, launchd on macOS and cron on Linux:
 
 ```bash
-bash manager/discover/setup-cron.sh            # 安装
-bash manager/discover/setup-cron.sh uninstall  # 卸载
+bash manager/discover/setup-cron.sh
 ```
 
 ---
 
-## 目录结构
+## HTTP API
 
-```
-claude-skills/
-├── my-skills/          # 我的 skill，源头，受 git 管理，软链接接入 Claude Code
-├── manager/
-│   ├── server.js       # 零依赖后端，端口 4317
-│   ├── index.html      # 单文件前端
-│   ├── setup-panel.sh  # launchd 常驻
-│   ├── swiftbar/       # 菜单栏插件
-│   └── discover/       # 发现页抓取器 + 每日 cron
-└── LICENSE
-```
+The backend is a plain JSON API on port 4317. Useful if you want to script it.
 
-官方 skill（pptx / pdf / docx / xlsx / skill-creator 等）不收录在这里 —— Claude Code 的插件市场已经提供，重复软链会撞名。面板会把它们标成「插件提供」。
+| Method | Path | Body | Does |
+| --- | --- | --- | --- |
+| `GET` | `/api/skills` | — | Every skill, its state, category and source |
+| `POST` | `/api/install` | `{ "url": "..." }` | Clone a repo into the library and link it |
+| `POST` | `/api/link` | `{ "name": "..." }` | Symlink a skill already in the library |
+| `POST` | `/api/unlink` | `{ "name": "..." }` | Remove the symlink, keep the source |
+| `GET` | `/api/discover` | — | Read the cached discover feed |
+| `POST` | `/api/discover/refresh` | — | Re-run the fetcher, 90s timeout |
 
 ---
 
-## 手动加一个 skill
+## Configuration
 
-面板装不了的（比如私有仓库），走这三步：
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `PORT` | `4317` | Port the panel listens on |
+| `GITHUB_TOKEN` | unset | Lifts the GitHub rate limit for the discover feed |
 
-```bash
-REPO=~/Documents/claude-skills
-mv /path/to/new-skill "$REPO/my-skills/new-skill"
-ln -s "$REPO/my-skills/new-skill" ~/.claude/skills/new-skill
-cd "$REPO" && git add -A && git commit -m "add new-skill"
+---
+
+## Project layout
+
+```
+skill_manager/
+├── my-skills/               # Your skills. Source of truth, git-tracked, symlinked into Claude Code
+└── manager/
+    ├── server.js            # Zero-dependency backend
+    ├── index.html           # Single-file frontend
+    ├── setup-panel.sh       # launchd always-on service
+    ├── swiftbar/            # Menu bar plugin
+    └── discover/            # Discover feed fetcher and daily job
 ```
 
 ---
 
-## 注意事项
+## Known limitations
 
-- **只在 macOS 上完整验证过。** 面板本身是跨平台的 Node 服务，但常驻（launchd）和菜单栏（SwiftBar）是 macOS 特有。
-- **面板会写你的 `~/.claude/skills/`。** 只建和删软链，不动源文件，但请知悉它有这个权限。
-- **端口固定 4317**，被占用时改环境变量 `PORT`。
-- **发现页抓 GitHub 会限速。** 不配 token 时请求间隔 6.5 秒；配了 `GITHUB_TOKEN` 环境变量几乎不限速。
+- **The always-on service and menu bar are macOS only.** The panel is a portable Node server, but launchd and SwiftBar are not. The discover job does handle Linux cron.
+- **No authentication.** It binds a local port and writes to `~/.claude/skills`. Keep it on localhost; do not expose it to a network.
+- **Only GitHub is a real API in the discover feed.** YouTube is best-effort scraping and will break when the page changes. The other platforms are hand-curated.
+- **Categories are inferred from keywords**, not curated. Expect the occasional skill in the wrong bucket.
+- **Install expects `SKILL.md` at the repo root or one level down.** Deeper nesting is not detected.
+- **The UI is currently Chinese only.**
+
+---
+
+## Roadmap
+
+- English UI
+- Windows support for the always-on service
+- Search and filter on the installed list
+- Update a skill in place, not just install and remove
 
 ---
 
 ## License
 
-MIT，见 [LICENSE](LICENSE)。
-
+MIT, see [LICENSE](LICENSE).
