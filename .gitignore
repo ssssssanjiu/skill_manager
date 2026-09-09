@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# 本地私有设置（不入库）
+**/.claude/settings.local.json
+
+# 临时/构建产物
+*.log
+node_modules/
+
+# 发现页每日抓取的产物，属于本地缓存，不入库
+manager/discover/cache.json

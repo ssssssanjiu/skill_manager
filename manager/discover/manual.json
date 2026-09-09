@@ -1,0 +1,7 @@
+{
+  "_note": "非自动抓取平台（X / 小红书 / 即刻 / YouTube）的手动补录区。把看到的好 skill 链接按平台加进对应数组即可，发现页会一并展示。字段：title, description, author, url。",
+  "twitter": [],
+  "xiaohongshu": [],
+  "jike": [],
+  "youtube": []
+}

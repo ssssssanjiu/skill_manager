@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skills</title>
+<style>
+  /* ===== OpenAI 主页风格 tokens（由 design-style-parser 解析得出） ===== */
+  :root {
+    --canvas: #ffffff;
+    --surface-2: #f7f7f8;
+    --ink: #0d0d0d;
+    --ink-2: #5d5d66;
+    --ink-3: #9a9aa2;
+    --line: #ececed;
+    --line-strong: #d8d8dc;
+    --green: #16794c;
+    --red: #d11507;
+    --orange: #c2410c;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --pill: 999px;
+    --maxw: 1100px;
+    --font: "OpenAI Sans", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+            "Helvetica Neue", Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas: #0d0d0d; --surface-2: #1a1a1a; --ink: #f5f5f5; --ink-2: #a5a5ad;
+      --ink-3: #6e6e76; --line: #242424; --line-strong: #333; --green: #2fbd7e; --orange: #fb923c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font); background: var(--canvas); color: var(--ink);
+    -webkit-font-smoothing: antialiased; line-height: 1.5; font-size: 16px;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 96px; }
+
+  /* 导航 + Tab */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--canvas) 82%, transparent);
+    backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav { max-width: var(--maxw); margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; letter-spacing: -.01em; }
+  .tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 3px; border-radius: var(--pill); }
+  .tab { border: none; background: transparent; color: var(--ink-2); font-family: inherit; font-size: 14px; font-weight: 500;
+         padding: 7px 16px; border-radius: var(--pill); cursor: pointer; transition: all .15s; }
+  .tab.active { background: var(--canvas); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .nav .live { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-2); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .hero { padding: 64px 0 24px; max-width: 760px; }
+  .hero h1 { font-size: 50px; font-weight: 500; letter-spacing: -.03em; line-height: 1.04; margin: 0 0 16px; }
+  .hero p { color: var(--ink-2); margin: 0; font-size: 19px; line-height: 1.45; letter-spacing: -.01em; }
+
+  /* 安装栏 */
+  .installbar { display: flex; gap: 10px; margin: 32px 0 6px; max-width: 720px;
+    background: var(--canvas); border: 1px solid var(--line-strong); border-radius: var(--pill); padding: 6px 6px 6px 8px; transition: border-color .15s; }
+  .installbar:focus-within { border-color: var(--ink); }
+  .installbar input { flex: 1; border: none; outline: none; background: transparent; color: var(--ink); font-size: 15px; padding: 10px 12px; font-family: inherit; }
+  .installbar input::placeholder { color: var(--ink-3); }
+
+  button.primary { border: none; background: var(--ink); color: var(--canvas); font-size: 15px; font-weight: 500;
+    padding: 11px 24px; border-radius: var(--pill); cursor: pointer; font-family: inherit; transition: background .15s, transform .1s, opacity .15s; white-space: nowrap; }
+  button.primary:hover { background: #383838; }
+  @media (prefers-color-scheme: dark){ button.primary:hover{ background:#d8d8d8; } }
+  button.primary:active { transform: scale(.98); }
+  button.primary:disabled { opacity: .45; cursor: default; }
+
+  .toast { font-size: 13.5px; min-height: 18px; margin: 10px 6px 0; transition: opacity .3s; color: var(--ink-2); }
+  .toast.ok { color: var(--green); } .toast.err { color: var(--red); }
+
+  .cat { margin: 52px 0 18px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .cat h2 { font-size: 27px; font-weight: 500; letter-spacing: -.02em; margin: 0; }
+  .cat .n { font-size: 13px; color: var(--ink-3); }
+  .cat .note { font-size: 12.5px; color: var(--ink-3); }
+  .cat a.search { font-size: 12.5px; color: var(--ink-2); text-decoration: none; border: 1px solid var(--line-strong); padding: 4px 12px; border-radius: var(--pill); }
+  .cat a.search:hover { background: var(--surface-2); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .card { background: var(--canvas); border: 1px solid var(--line); border-radius: var(--radius-md);
+    padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 10px;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 6px 22px rgba(0,0,0,.07); border-color: var(--line-strong); }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .card .name { font-size: 16px; font-weight: 600; letter-spacing: -.01em; flex: 1; word-break: break-word; }
+  .card .desc { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .desc.expanded { -webkit-line-clamp: unset; display: block; overflow: visible; }
+  .toggle { align-self: flex-start; background: none; border: none; padding: 0; margin: -4px 0 0; color: var(--ink-2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; display: none; }
+  .toggle:hover { color: var(--ink); text-decoration: underline; }
+
+  .badge { font-size: 11.5px; font-weight: 500; padding: 3px 10px; border-radius: var(--pill); white-space: nowrap; border: 1px solid transparent; }
+  .badge.on { background: transparent; border-color: var(--line-strong); color: var(--ink); }
+  .badge.on::before { content:"●"; color: var(--green); font-size: 8px; margin-right: 5px; vertical-align: 1px; }
+  .badge.off { background: var(--surface-2); color: var(--ink-3); }
+  .badge.plugin { background: var(--surface-2); color: var(--ink-2); }
+
+  .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-3); }
+  .meta .star { color: var(--ink-2); font-weight: 500; }
+  .meta .hot { color: var(--orange); font-weight: 500; }
+  .meta .biz { color: var(--ink); border: 1px solid var(--line-strong); padding: 1px 8px; border-radius: var(--pill); font-size: 11px; }
+
+  .row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .src { font-size: 12px; color: var(--ink-3); } .spacer { flex: 1; }
+  a.view { font-size: 12.5px; color: var(--ink-2); text-decoration: none; }
+  a.view:hover { color: var(--ink); text-decoration: underline; }
+
+  button.mini { border: 1px solid var(--line-strong); background: var(--canvas); color: var(--ink);
+    font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: var(--pill); cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s; }
+  button.mini:hover { background: var(--surface-2); }
+  button.mini.install { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
+  button.mini.install:hover { background: #383838; }
+  @media (prefers-color-scheme: dark){ button.mini.install:hover{ background:#d8d8d8; } }
+  button.mini:disabled { opacity: .4; cursor: default; }
+
+  /* 发现页头 */
+  .disc-head { display: flex; align-items: center; gap: 14px; padding: 64px 0 8px; flex-wrap: wrap; }
+  .disc-head h1 { font-size: 50px; font-weight: 500; letter-spacing: -.03em; margin: 0; }
+  .disc-sub { color: var(--ink-2); font-size: 16px; margin: 6px 0 0; max-width: 720px; }
+  .disc-bar { display: flex; align-items: center; gap: 12px; margin: 20px 0 0; flex-wrap: wrap; }
+  .upd { font-size: 13px; color: var(--ink-3); }
+  .chips { display: flex; gap: 6px; }
+  .chip { border: 1px solid var(--line-strong); background: var(--canvas); color: var(--ink-2); font-family: inherit; font-size: 13px;
+    padding: 6px 14px; border-radius: var(--pill); cursor: pointer; transition: all .15s; }
+  .chip.active { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
+
+  .empty { text-align: center; color: var(--ink-3); padding: 64px 0; font-size: 15px; }
+  .skeleton { height: 128px; border-radius: var(--radius-md); border: 1px solid var(--line); background: linear-gradient(90deg,var(--canvas),var(--surface-2),var(--canvas)); background-size: 200% 100%; animation: sh 1.4s infinite; }
+  @keyframes sh { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <span class="brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.2" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+        Skills
+      </span>
+      <div class="tabs">
+        <button class="tab active" data-page="mine">我的技能</button>
+        <button class="tab" data-page="discover">发现</button>
+      </div>
+      <span class="live"><span class="dot"></span>实时同步</span>
+    </div>
+  </header>
+
+  <!-- 页面 1：我的技能 -->
+  <div class="page active" id="page-mine">
+    <div class="wrap">
+      <section class="hero">
+        <h1>管理你的技能</h1>
+        <p>粘贴一个 GitHub 地址即可安装。Claude 给你装的 skill 会自动出现在这里，并按功能归类。</p>
+      </section>
+      <div class="installbar">
+        <input id="url" type="text" placeholder="https://github.com/owner/repo" autocomplete="off" spellcheck="false" />
+        <button class="primary" id="installBtn">安装</button>
+      </div>
+      <div class="toast" id="toast"></div>
+      <div id="list">
+        <div class="grid"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页面 2：发现 -->
+  <div class="page" id="page-discover">
+    <div class="wrap">
+      <div class="disc-head"><h1>发现</h1></div>
+      <p class="disc-sub">从 GitHub、YouTube、小红书、X、即刻 收集全网最新、有价值的 Claude skill，聚焦 AI 创业方向。每日自动更新。</p>
+      <div class="disc-bar">
+        <span class="upd" id="discUpd">加载中…</span>
+        <span class="spacer"></span>
+        <div class="chips">
+          <button class="chip active" data-filter="all">全部</button>
+          <button class="chip" data-filter="hot">🔥 热门</button>
+          <button class="chip" data-filter="biz">AI 创业</button>
+        </div>
+        <button class="primary" id="refreshBtn" style="padding:9px 18px;font-size:14px;">刷新</button>
+      </div>
+      <div class="toast" id="discToast"></div>
+      <div id="discList">
+        <div class="grid"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+function esc(s){ return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- Tab 切换 ---------- */
+let discoverLoaded = false;
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  $$('.page').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  $('#page-' + t.dataset.page).classList.add('active');
+  if (t.dataset.page === 'discover' && !discoverLoaded) { discoverLoaded = true; loadDiscover(); }
+}));
+
+/* ====================================================================== */
+/* 页面 1：我的技能                                                         */
+/* ====================================================================== */
+const listEl = $('#list'), countEl = null, toastEl = $('#toast');
+function toast(el, msg, kind) {
+  el.textContent = msg; el.className = 'toast ' + (kind || '');
+  if (msg) setTimeout(() => { if (el.textContent === msg) { el.style.opacity = 0; setTimeout(()=>{el.textContent='';el.style.opacity=1;el.className='toast';}, 300);} }, 4000);
+}
+const SRC_LABEL = { my: '我的库', official: '官方留档', claude: '手动放入' };
+const expandedKeys = new Set();
+
+function applyDescToggles(scope) {
+  scope.querySelectorAll('.card').forEach(card => {
+    const key = card.dataset.key; const desc = card.querySelector('.desc'); const toggle = card.querySelector('.toggle');
+    if (!desc || !toggle) return;
+    const expanded = expandedKeys.has(key);
+    if (expanded) desc.classList.add('expanded');
+    const overflowing = desc.scrollHeight > desc.clientHeight + 2;
+    if (expanded || overflowing) { toggle.style.display = 'inline'; toggle.textContent = expanded ? '收起' : '展开'; }
+    else toggle.style.display = 'none';
+  });
+}
+
+function renderMine(skills) {
+  if (!skills.length) { listEl.innerHTML = '<div class="empty">还没有 skill。粘贴一个 GitHub 地址安装，或让 Claude 帮你装一个。</div>'; return; }
+  const groups = {};
+  for (const s of skills) (groups[s.category] = groups[s.category] || []).push(s);
+  const cats = Object.keys(groups).sort((a,b)=>a.localeCompare(b,'zh'));
+  let html = '';
+  for (const cat of cats) {
+    const items = groups[cat];
+    html += `<div class="cat"><h2>${esc(cat)}</h2><span class="n">${items.length}</span></div><div class="grid">`;
+    for (const s of items) {
+      let badge = s.installed ? '<span class="badge on">已安装</span>' : (s.pluginProvided ? '<span class="badge plugin">插件提供</span>' : '<span class="badge off">未安装</span>');
+      let btn = s.installed ? `<button class="mini" data-act="unlink" data-name="${esc(s.key)}">移除</button>` : `<button class="mini install" data-act="link" data-name="${esc(s.key)}">安装到 Claude</button>`;
+      html += `<div class="card" data-key="${esc(s.key)}">
+        <div class="top"><span class="name">${esc(s.name)}</span>${badge}</div>
+        <div class="desc">${esc(s.description)}</div>
+        <button class="toggle" type="button">展开</button>
+        <div class="row"><span class="src">${SRC_LABEL[s.source]||s.source}</span><span class="spacer"></span>${btn}</div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  listEl.innerHTML = html;
+  applyDescToggles(listEl);
+}
+
+async function postJSON(path, body) {
+  const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+let lastJson = '';
+async function loadMine() {
+  try {
+    const r = await fetch('/api/skills'); const d = await r.json();
+    if (!d.skills) return;
+    const json = JSON.stringify(d.skills);
+    if (json === lastJson) return;
+    lastJson = json; renderMine(d.skills);
+  } catch (e) {}
+}
+
+$('#installBtn').addEventListener('click', async () => {
+  const url = $('#url').value.trim();
+  if (!url) { toast(toastEl, '请输入 GitHub 地址', 'err'); return; }
+  const btn = $('#installBtn'); btn.disabled = true; btn.textContent = '安装中…';
+  toast(toastEl, '正在克隆并安装…');
+  const d = await postJSON('/api/install', { url });
+  btn.disabled = false; btn.textContent = '安装';
+  if (d.ok) { toast(toastEl, d.warning || (d.already ? `${d.name} 已存在` : `已安装 ${d.name}`), d.warning ? 'err' : 'ok'); if (!d.warning) $('#url').value = ''; loadMine(); }
+  else toast(toastEl, d.error || '安装失败', 'err');
+});
+$('#url').addEventListener('keydown', e => { if (e.key === 'Enter') $('#installBtn').click(); });
+
+listEl.addEventListener('click', async e => {
+  const t = e.target.closest('.toggle');
+  if (t) {
+    const card = t.closest('.card'); const key = card.dataset.key; const desc = card.querySelector('.desc');
+    if (expandedKeys.has(key)) { expandedKeys.delete(key); desc.classList.remove('expanded'); t.textContent = '展开'; }
+    else { expandedKeys.add(key); desc.classList.add('expanded'); t.textContent = '收起'; }
+    return;
+  }
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const { act, name } = b.dataset;
+  b.disabled = true; b.textContent = act === 'link' ? '链接中…' : '移除中…';
+  const d = await postJSON('/api/' + act, { name });
+  if (d.ok) toast(toastEl, act === 'link' ? `已安装 ${name}` : `已移除 ${name}`, 'ok');
+  else toast(toastEl, d.error || '操作失败', 'err');
+  loadMine();
+});
+
+loadMine();
+setInterval(loadMine, 3000);
+
+/* ====================================================================== */
+/* 页面 2：发现                                                            */
+/* ====================================================================== */
+const discListEl = $('#discList'), discToastEl = $('#discToast');
+let discData = null, discFilter = 'all';
+
+$$('.chip').forEach(c => c.addEventListener('click', () => {
+  $$('.chip').forEach(x => x.classList.remove('active'));
+  c.classList.add('active'); discFilter = c.dataset.filter; renderDiscover();
+}));
+
+function fmtTime(iso) {
+  if (!iso) return '尚未抓取';
+  const d = new Date(iso), now = new Date();
+  const mins = Math.round((now - d) / 60000);
+  if (mins < 60) return `${mins} 分钟前更新`;
+  if (mins < 1440) return `${Math.round(mins/60)} 小时前更新`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} 更新`;
+}
+
+function passFilter(it) {
+  if (discFilter === 'hot') return !!it.hot;
+  if (discFilter === 'biz') return !!it.startupRelevant;
+  return true;
+}
+
+function discCard(it) {
+  const meta = [];
+  if (it.source === 'github') {
+    if (typeof it.stars === 'number') meta.push(`<span class="star">★ ${it.stars.toLocaleString()}</span>`);
+    if (it.hot) meta.push(`<span class="hot">🔥 热门</span>`);
+    if (it.startupRelevant) meta.push(`<span class="biz">AI 创业</span>`);
+    if (it.language) meta.push(esc(it.language));
+  } else if (it.author) meta.push(esc(it.author));
+  const installBtn = it.canInstall
+    ? `<button class="mini install" data-install="${esc(it.installUrl)}">安装</button>`
+    : `<a class="view" href="${esc(it.url)}" target="_blank" rel="noopener">查看 ↗</a>`;
+  const viewLink = it.canInstall ? `<a class="view" href="${esc(it.url)}" target="_blank" rel="noopener">查看 ↗</a>` : '';
+  return `<div class="card">
+    <div class="top"><span class="name">${esc(it.title)}</span></div>
+    ${it.description ? `<div class="desc">${esc(it.description)}</div>` : ''}
+    ${meta.length ? `<div class="meta">${meta.join('')}</div>` : ''}
+    <div class="row"><span class="spacer"></span>${viewLink}${installBtn}</div>
+  </div>`;
+}
+
+function renderDiscover() {
+  if (!discData) return;
+  $('#discUpd').textContent = fmtTime(discData.updatedAt);
+  const sources = discData.sources || [];
+  if (!sources.length) { discListEl.innerHTML = '<div class="empty">尚未抓取。点右上角“刷新”，或等每日 cron。</div>'; return; }
+  let html = '';
+  for (const s of sources) {
+    const items = (s.items || []).filter(passFilter);
+    const search = s.searchUrl ? `<a class="search" href="${esc(s.searchUrl)}" target="_blank" rel="noopener">去搜索 ↗</a>` : '';
+    html += `<div class="cat"><h2>${esc(s.label)}</h2><span class="n">${items.length}</span><span class="note">${esc(s.note||'')}</span><span class="spacer"></span>${search}</div>`;
+    if (items.length) { html += '<div class="grid">' + items.map(discCard).join('') + '</div>'; }
+    else { html += `<div class="empty" style="padding:28px 0;text-align:left;color:var(--ink-3);font-size:14px;">该来源暂无结果${s.searchUrl ? '，可点上方“去搜索”浏览' : ''}。</div>`; }
+  }
+  discListEl.innerHTML = html;
+}
+
+async function loadDiscover() {
+  try {
+    const r = await fetch('/api/discover'); discData = await r.json(); renderDiscover();
+  } catch (e) { discListEl.innerHTML = '<div class="empty">加载失败。</div>'; }
+}
+
+$('#refreshBtn').addEventListener('click', async () => {
+  const btn = $('#refreshBtn'); btn.disabled = true; btn.textContent = '抓取中…';
+  toast(discToastEl, '正在从各平台抓取最新 skill，约需 30–60 秒…');
+  try {
+    const r = await fetch('/api/discover/refresh', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok || d.sources) { discData = d; renderDiscover(); toast(discToastEl, `已更新，共 ${d.total} 条`, 'ok'); }
+    else toast(discToastEl, d.error || '抓取失败', 'err');
+  } catch (e) { toast(discToastEl, '抓取失败：' + e.message, 'err'); }
+  btn.disabled = false; btn.textContent = '刷新';
+});
+
+discListEl.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-install]');
+  if (!b) return;
+  b.disabled = true; const orig = b.textContent; b.textContent = '安装中…';
+  const d = await postJSON('/api/install', { url: b.dataset.install });
+  if (d.ok) { b.textContent = '已安装'; toast(discToastEl, d.warning || `已安装 ${d.name}，可在“我的技能”查看`, d.warning ? 'err' : 'ok'); loadMine(); }
+  else { b.disabled = false; b.textContent = orig; toast(discToastEl, d.error || '安装失败', 'err'); }
+});
+</script>
+</body>
+</html>
