@@ -16,10 +16,6 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey" alt="Platform">
 </p>
 
-<p align="center">
-  <img src="assets/panel.png" alt="Skill Manager panel: every Claude Code skill grouped by category, each card showing its name, description and install state, with a paste-a-GitHub-URL install box at the top.">
-</p>
-
 Claude Code loads skills from `~/.claude/skills`. That works fine for three of them. Past a dozen, you stop knowing what is installed, where it came from, or which copy is the real one. Installing a new skill means cloning a repo, digging for the `SKILL.md`, and moving a directory to exactly the right path.
 
 Skill Manager puts all of it on one page. Every skill it can see, grouped by what it does, with its state on the card. Installing is a paste and a click. Nothing is copied anywhere: your skills stay in a git repository you control, and `~/.claude/skills` holds only symlinks pointing at it.

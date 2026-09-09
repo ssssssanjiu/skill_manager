@@ -16,10 +16,6 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey" alt="Platform">
 </p>
 
-<p align="center">
-  <img src="assets/panel.png" alt="Skill Manager 面板：所有 Claude Code skill 按功能分组，每张卡片显示名称、描述和安装状态，顶部是粘贴 GitHub 地址的安装框。">
-</p>
-
 Claude Code 从 `~/.claude/skills` 读 skill。三五个的时候没问题，过了十几个，你就说不清装了什么、从哪来的、哪份才是真的。装一个新的意味着 clone 仓库、翻出 `SKILL.md`、再把目录挪到恰好正确的位置。
 
 Skill Manager 把这些收进一页。能看到的 skill 全在，按功能分好组，状态写在卡片上。装一个是粘贴加点击。全程零拷贝：文件实体留在你自己的 git 仓库里，`~/.claude/skills` 里只有指向它的软链接。
