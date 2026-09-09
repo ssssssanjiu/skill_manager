@@ -10,3 +10,10 @@ node_modules/
 
 # 发现页每日抓取的产物，属于本地缓存，不入库
 manager/discover/cache.json
+
+# 本地留档，不入公开库
+anthropic-official/
+my-skills/guizang-ppt-skill/
+
+# 发现页抓取产物
+manager/discover/cache.json
